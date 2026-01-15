@@ -2,9 +2,9 @@ package internal
 
 import (
 	"context"
+	order "github.com/Dzhodddi/EcommerceAPI/order/client"
 
-	order "github.com/rasadov/EcommerceAPI/order/client"
-	"github.com/rasadov/EcommerceAPI/payment/proto/pb"
+	"github.com/Dzhodddi/EcommerceAPI/payment/proto/pb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 

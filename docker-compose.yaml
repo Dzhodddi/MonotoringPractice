@@ -1,209 +1,220 @@
 services:
-  base:
-    image: "rasadov/ecommerce-base:latest"
-    build:
-      context: .
-      dockerfile: docker/base.dockerfile
-    profiles:
-      - build-only
-
-  zookeeper:
-    restart: always
-    container_name: kafka-like-zookeeper
-    image: docker.io/bitnami/zookeeper:3.8
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
-      - "21850:2181"
-    volumes:
-      - "zookeeper-volume:/bitnami"
-    environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
+      - "127.0.0.1:9090:9090"
 
-  kafka:
-    container_name: kafka
-    hostname: kafka
-    image: docker.io/bitnami/kafka:3.3
-    depends_on:
-      - zookeeper
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
     volumes:
-      - "kafka-volume:/bitnami"
+      - grafana_data:/var/lib/grafana
+
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    container_name: sentinell-redpanda
+    command:
+      - redpanda start
+      - --smp 1
+      - --memory 1G
+      - --reserve-memory 0M
+      - --overprovisioned
+      - --node-id 0
+      - --check=false
+      - --kafka-addr PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:9092
+      - --pandaproxy-addr 0.0.0.0:8082
+      - --advertise-pandaproxy-addr redpanda:8082
+      - --set redpanda.auto_create_topics_enabled=true
+      - --set redpanda.default_topic_replications=1
+      - --set redpanda.internal_topic_replication_factor=1
+      - --set redpanda.transaction_coordinator_replication=1
+      - --set redpanda.id_allocator_replication=1
     ports:
       - "9092:9092"
+      - "8082:8082"
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster info"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  console:
+    image: docker.redpanda.com/redpandadata/console:latest
+    container_name: sentinell-console
     environment:
-      - KAFKA_BROKER_ID=1
-      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
-      - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
-      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9093
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
-    restart: unless-stopped
+      KAFKA_BROKERS: redpanda:9092
+    ports:
+      - "8085:8080"
+    depends_on:
+      redpanda:
+        condition: service_healthy
 
   account_db:
-    container_name: "account_db"
-    image: postgres:14.0
+    image: postgres:17.6
     environment:
-      POSTGRES_DB: rasadov
-      POSTGRES_USER: rasadov
-      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: accounts
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     volumes:
       - account_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d accounts" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   product_db:
-    container_name: "product_db"
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.2.4
+    image: opensearchproject/opensearch:2.11.0
     environment:
-      ES_JAVA_OPTS: -Xms1g -Xmx1g
       discovery.type: single-node
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+      plugins.security.disabled: "true"
     volumes:
-      - product_db_data:/usr/share/elasticsearch/data
+      - product_db_data:/usr/share/opensearch/data
+    ports:
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
 
   order_db:
-    container_name: "order_db"
-    image: postgres:14.0
+    image: postgres:17.6
     environment:
-      POSTGRES_DB: rasadov
-      POSTGRES_USER: rasadov
-      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: orders
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     volumes:
       - order_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d orders" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   payment_db:
-    container_name: "payment_db"
-    image: postgres:14.0
+    image: postgres:17.6
     environment:
-      POSTGRES_DB: rasadov
-      POSTGRES_USER: rasadov
-      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: payments
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     volumes:
       - payment_db_data:/var/lib/postgresql/data
-    restart: unless-stopped
-
-  recommender_db:
-    container_name: "recommender_db"
-    image: postgres:15
-    environment:
-      POSTGRES_DB: rasadov
-      POSTGRES_USER: rasadov
-      POSTGRES_PASSWORD: 123456
-    volumes:
-      - recommender_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d payments" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   account:
-    container_name: "account"
-    image: "rasadov/account:latest"
     build:
       context: .
-      dockerfile: docker/services/account.dockerfile
+      dockerfile: account/deployment/Dockerfile
+      target: prod
     depends_on:
-      - account_db
+      account_db:
+        condition: service_healthy
     environment:
-      DATABASE_URL: postgres://rasadov:123456@account_db/rasadov?sslmode=disable
+      DATABASE_URL: postgres://postgres:postgres@account_db:5432/accounts?sslmode=disable
+    volumes:
+      - ./account:/app/account
+      - ./pkg:/app/pkg
     restart: on-failure
 
   product:
-    container_name: "product"
-    image: "rasadov/product:latest"
     build:
       context: .
-      dockerfile: docker/services/product.dockerfile
+      dockerfile: product/deployment/Dockerfile
+      target: prod
     depends_on:
-      - product_db
-      - kafka
+      product_db:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
     environment:
       DATABASE_URL: http://product_db:9200
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
     restart: on-failure
 
   order:
-    container_name: "order"
-    image: "rasadov/order:latest"
     build:
       context: .
-      dockerfile: docker/services/order.dockerfile
+      dockerfile: order/deployment/Dockerfile
+      target: prod
     depends_on:
-      - order_db
-      - account
-      - product
-      - kafka
+      order_db:
+        condition: service_healthy
+      account:
+        condition: service_started
+      product:
+        condition: service_started
+      redpanda:
+        condition: service_healthy
     environment:
-      DATABASE_URL: postgres://rasadov:123456@order_db/rasadov?sslmode=disable
+      DATABASE_URL: postgres://postgres:postgres@order_db:5432/orders?sslmode=disable
       ACCOUNT_SERVICE_URL: account:8080
       PRODUCT_SERVICE_URL: product:8080
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
     restart: on-failure
 
   payment:
-    container_name: "payment"
-    image: "rasadov/payment:latest"
     build:
       context: .
-      dockerfile: docker/services/payment.dockerfile
+      dockerfile: payment/deployment/Dockerfile
+      target: prod
     depends_on:
-      - payment_db
-      - order
-      - kafka
+      payment_db:
+        condition: service_healthy
+      order:
+        condition: service_started
+      redpanda:
+        condition: service_healthy
     environment:
-      DATABASE_URL: postgres://rasadov:123456@payment_db/rasadov?sslmode=disable
+      DATABASE_URL: postgres://postgres:postgres@payment_db:5432/payments?sslmode=disable
       ORDER_SERVICE_URL: order:8080
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       PRODUCT_EVENTS_TOPIC: product_events
-      # Add Payment Provider Credentials
-    restart: on-failure
-
-  recommender-server:
-    container_name: "recommender"
-    image: "rasadov/recommender:latest"
-    build:
-      context: .
-      dockerfile: docker/services/recommender.dockerfile
-    command: python app/entry/main.py
-    depends_on:
-      - recommender_db
-      - kafka
-    environment:
-      DATABASE_URL: postgresql://rasadov:123456@recommender_db/rasadov?sslmode=disable
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    restart: on-failure
-
-  recommender-sync:
-    container_name: "recommender-sync"
-    image: "rasadov/recommender-sync:latest"
-    build:
-      context: .
-      dockerfile: docker/services/recommender.dockerfile
-    command: python app/entry/sync.py
-    depends_on:
-      - recommender_db
-      - kafka
-    environment:
-      DATABASE_URL: postgresql://rasadov:123456@recommender_db/rasadov?sslmode=disable
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     restart: on-failure
 
   graphql:
-    container_name: "graphql"
-    image: "rasadov/graphql:latest"
     build:
       context: .
-      dockerfile: docker/services/graphql.dockerfile
+      target: prod
+      dockerfile: graphql/deployment/Dockerfile
     ports:
       - "8080:8080"
     depends_on:
-      - account
-      - product
-      - order
-      - payment
-      - recommender-server
-      - recommender-sync
+      account:
+        condition: service_started
+      product:
+        condition: service_started
+      order:
+        condition: service_started
+      payment:
+        condition: service_started
     environment:
       ACCOUNT_SERVICE_URL: account:8080
       PRODUCT_SERVICE_URL: product:8080
       ORDER_SERVICE_URL: order:8080
       PAYMENT_SERVICE_URL: payment:8080
       RECOMMENDER_SERVICE_URL: recommender:8080
+    volumes:
+      - ./account:/app/account
+      - ./pkg:/app/pkg
+      - ./graphql:/app/graphql
+      - ./product:/app/product
     restart: on-failure
 
 volumes:
@@ -211,6 +222,5 @@ volumes:
   product_db_data:
   order_db_data:
   payment_db_data:
-  recommender_db_data:
-  kafka-volume:
-  zookeeper-volume:
+  redpanda-data:
+  grafana_data:

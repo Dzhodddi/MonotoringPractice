@@ -2,20 +2,31 @@ package middleware
 
 import (
 	"context"
-
+	"fmt"
 	"github.com/gin-gonic/gin"
 )
 
-// Key to use when setting the gin context.
-type ginContextKeyType struct{}
+type contextKey string
 
-var ginContextKey = ginContextKeyType{}
+const GinContextKey contextKey = "GinContextKey"
 
 func GinContextToContextMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Put the gin.Context into the request context so gqlgen can retrieve it
-		ctx := context.WithValue(c.Request.Context(), ginContextKey, c)
+		ctx := context.WithValue(c.Request.Context(), GinContextKey, c)
 		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}
+}
+
+func GinContextFromContext(ctx context.Context) (*gin.Context, error) {
+	ginContext := ctx.Value(GinContextKey)
+	if ginContext == nil {
+		return nil, fmt.Errorf("could not retrieve gin context")
+	}
+
+	gc, ok := ginContext.(*gin.Context)
+	if !ok {
+		return nil, fmt.Errorf("gin context has wrong type")
+	}
+	return gc, nil
 }

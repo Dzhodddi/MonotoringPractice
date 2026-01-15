@@ -2,11 +2,10 @@ package graph
 
 import (
 	"context"
+	"github.com/Dzhodddi/EcommerceAPI/gateway/generated"
+	"github.com/Dzhodddi/EcommerceAPI/gateway/models"
 	"log"
 	"time"
-
-	"github.com/rasadov/EcommerceAPI/graphql/generated"
-	"github.com/rasadov/EcommerceAPI/graphql/models"
 )
 
 type accountResolver struct {

@@ -3,11 +3,11 @@ package internal
 import (
 	"context"
 	"encoding/json"
+	"github.com/Dzhodddi/EcommerceAPI/payment/internal/models"
+	"github.com/Dzhodddi/EcommerceAPI/pkg/kafka"
 	"log"
 
 	"github.com/IBM/sarama"
-	"github.com/rasadov/EcommerceAPI/payment/models"
-	"github.com/rasadov/EcommerceAPI/pkg/kafka"
 )
 
 type EventConsumer struct {

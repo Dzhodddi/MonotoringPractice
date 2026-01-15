@@ -2,27 +2,27 @@ package internal
 
 import (
 	"context"
+	models2 "github.com/Dzhodddi/EcommerceAPI/payment/internal/models"
 	"log"
 
-	"github.com/rasadov/EcommerceAPI/payment/models"
 	"gorm.io/gorm"
 )
 
 type Repository interface {
 	Close()
 
-	GetCustomerByCustomerID(ctx context.Context, customerId string) (*models.Customer, error)
-	GetCustomerByUserID(ctx context.Context, userId uint64) (*models.Customer, error)
-	SaveCustomer(ctx context.Context, customer *models.Customer) error
+	GetCustomerByCustomerID(ctx context.Context, customerId string) (*models2.Customer, error)
+	GetCustomerByUserID(ctx context.Context, userId uint64) (*models2.Customer, error)
+	SaveCustomer(ctx context.Context, customer *models2.Customer) error
 
-	GetProductByProductID(ctx context.Context, productId string) (*models.Product, error)
-	GetProductsByIDs(ctx context.Context, productIds []string) ([]*models.Product, error)
-	SaveProduct(ctx context.Context, product *models.Product) error
-	UpdateProduct(ctx context.Context, product *models.Product) error
+	GetProductByProductID(ctx context.Context, productId string) (*models2.Product, error)
+	GetProductsByIDs(ctx context.Context, productIds []string) ([]*models2.Product, error)
+	SaveProduct(ctx context.Context, product *models2.Product) error
+	UpdateProduct(ctx context.Context, product *models2.Product) error
 	DeleteProduct(ctx context.Context, productId string) error
 
-	RegisterTransaction(ctx context.Context, transaction *models.Transaction) error
-	UpdateTransaction(ctx context.Context, transaction *models.Transaction) error
+	RegisterTransaction(ctx context.Context, transaction *models2.Transaction) error
+	UpdateTransaction(ctx context.Context, transaction *models2.Transaction) error
 }
 
 type postgresRepository struct {
@@ -30,17 +30,17 @@ type postgresRepository struct {
 }
 
 func NewPostgresRepository(db *gorm.DB) (Repository, error) {
-	err := db.AutoMigrate(&models.Customer{})
+	err := db.AutoMigrate(&models2.Customer{})
 	if err != nil {
 		return nil, err
 	}
 
-	err = db.AutoMigrate(&models.Product{})
+	err = db.AutoMigrate(&models2.Product{})
 	if err != nil {
 		return nil, err
 	}
 
-	err = db.AutoMigrate(&models.Transaction{})
+	err = db.AutoMigrate(&models2.Transaction{})
 	if err != nil {
 		return nil, err
 	}
@@ -69,8 +69,8 @@ func (repository *postgresRepository) Close() {
 	}
 }
 
-func (repository *postgresRepository) GetCustomerByCustomerID(ctx context.Context, customerId string) (*models.Customer, error) {
-	var customer models.Customer
+func (repository *postgresRepository) GetCustomerByCustomerID(ctx context.Context, customerId string) (*models2.Customer, error) {
+	var customer models2.Customer
 	err := repository.db.WithContext(ctx).First(&customer, "id = ?", customerId).Error
 	if err != nil {
 		return nil, err
@@ -78,8 +78,8 @@ func (repository *postgresRepository) GetCustomerByCustomerID(ctx context.Contex
 	return &customer, nil
 }
 
-func (repository *postgresRepository) GetCustomerByUserID(ctx context.Context, userId uint64) (*models.Customer, error) {
-	var customer models.Customer
+func (repository *postgresRepository) GetCustomerByUserID(ctx context.Context, userId uint64) (*models2.Customer, error) {
+	var customer models2.Customer
 	err := repository.db.WithContext(ctx).First(&customer, "user_id = ?", userId).Error
 	if err != nil {
 		return nil, err
@@ -87,8 +87,8 @@ func (repository *postgresRepository) GetCustomerByUserID(ctx context.Context, u
 	return &customer, nil
 }
 
-func (repository *postgresRepository) GetProductByProductID(ctx context.Context, productId string) (*models.Product, error) {
-	var product models.Product
+func (repository *postgresRepository) GetProductByProductID(ctx context.Context, productId string) (*models2.Product, error) {
+	var product models2.Product
 	err := repository.db.WithContext(ctx).First(&product, "product_id = ?", productId).Error
 	if err != nil {
 		return nil, err
@@ -96,8 +96,8 @@ func (repository *postgresRepository) GetProductByProductID(ctx context.Context,
 	return &product, nil
 }
 
-func (repository *postgresRepository) GetProductsByIDs(ctx context.Context, productIds []string) ([]*models.Product, error) {
-	var products []*models.Product
+func (repository *postgresRepository) GetProductsByIDs(ctx context.Context, productIds []string) ([]*models2.Product, error) {
+	var products []*models2.Product
 	err := repository.db.WithContext(ctx).Find(&products, "product_id IN (?)", productIds).Error
 	if err != nil {
 		return nil, err
@@ -105,26 +105,26 @@ func (repository *postgresRepository) GetProductsByIDs(ctx context.Context, prod
 	return products, nil
 }
 
-func (repository *postgresRepository) SaveCustomer(ctx context.Context, customer *models.Customer) error {
+func (repository *postgresRepository) SaveCustomer(ctx context.Context, customer *models2.Customer) error {
 	return repository.db.WithContext(ctx).Create(&customer).Error
 }
 
-func (repository *postgresRepository) SaveProduct(ctx context.Context, product *models.Product) error {
+func (repository *postgresRepository) SaveProduct(ctx context.Context, product *models2.Product) error {
 	return repository.db.WithContext(ctx).Create(&product).Error
 }
 
-func (repository *postgresRepository) UpdateProduct(ctx context.Context, product *models.Product) error {
+func (repository *postgresRepository) UpdateProduct(ctx context.Context, product *models2.Product) error {
 	return repository.db.WithContext(ctx).Save(&product).Error
 }
 
 func (repository *postgresRepository) DeleteProduct(ctx context.Context, productId string) error {
-	return repository.db.WithContext(ctx).Delete(&models.Product{}, "product_id = ?", productId).Error
+	return repository.db.WithContext(ctx).Delete(&models2.Product{}, "product_id = ?", productId).Error
 }
 
-func (repository *postgresRepository) RegisterTransaction(ctx context.Context, transaction *models.Transaction) error {
+func (repository *postgresRepository) RegisterTransaction(ctx context.Context, transaction *models2.Transaction) error {
 	return repository.db.WithContext(ctx).Create(&transaction).Error
 }
 
-func (repository *postgresRepository) UpdateTransaction(ctx context.Context, transaction *models.Transaction) error {
+func (repository *postgresRepository) UpdateTransaction(ctx context.Context, transaction *models2.Transaction) error {
 	return repository.db.WithContext(ctx).Save(&transaction).Error
 }

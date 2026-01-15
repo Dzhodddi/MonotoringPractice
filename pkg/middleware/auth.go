@@ -2,10 +2,9 @@ package middleware
 
 import (
 	"context"
-
+	"github.com/Dzhodddi/EcommerceAPI/pkg/auth"
+	"github.com/Dzhodddi/EcommerceAPI/pkg/contextkeys"
 	"github.com/gin-gonic/gin"
-	"github.com/rasadov/EcommerceAPI/pkg/auth"
-	"github.com/rasadov/EcommerceAPI/pkg/contextkeys"
 )
 
 func AuthorizeJWT() gin.HandlerFunc {
@@ -27,7 +26,6 @@ func AuthorizeJWT() gin.HandlerFunc {
 		if claims, ok := token.Claims.(*auth.JWTCustomClaims); ok && token.Valid {
 			c.Set("userID", claims.UserID)
 			ctxWithVal := context.WithValue(c.Request.Context(), contextkeys.UserIDKey, claims.UserID)
-
 			c.Request = c.Request.WithContext(ctxWithVal)
 		} else {
 			c.Set("userID", "")

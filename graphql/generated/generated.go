@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Dzhodddi/EcommerceAPI/gateway/models"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
-	"github.com/rasadov/EcommerceAPI/graphql/models"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -137,7 +137,7 @@ func (e *executableSchema) Schema() *ast.Schema {
 	return parsedSchema
 }
 
-func (e *executableSchema) Complexity(typeName, field string, childComplexity int, rawArgs map[string]any) (int, bool) {
+func (e *executableSchema) Complexity(ctx context.Context, typeName, field string, childComplexity int, rawArgs map[string]any) (int, bool) {
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
@@ -148,21 +148,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Account.Email(childComplexity), true
-
 	case "Account.id":
 		if e.complexity.Account.ID == nil {
 			break
 		}
 
 		return e.complexity.Account.ID(childComplexity), true
-
 	case "Account.name":
 		if e.complexity.Account.Name == nil {
 			break
 		}
 
 		return e.complexity.Account.Name(childComplexity), true
-
 	case "Account.orders":
 		if e.complexity.Account.Orders == nil {
 			break
@@ -182,91 +179,84 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_createCheckoutSession_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_createCheckoutSession_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
 		return e.complexity.Mutation.CreateCheckoutSession(childComplexity, args["details"].(*CheckoutInput)), true
-
 	case "Mutation.createCustomerPortalSession":
 		if e.complexity.Mutation.CreateCustomerPortalSession == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_createCustomerPortalSession_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_createCustomerPortalSession_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
 		return e.complexity.Mutation.CreateCustomerPortalSession(childComplexity, args["credentials"].(*CustomerPortalSessionInput)), true
-
 	case "Mutation.createOrder":
 		if e.complexity.Mutation.CreateOrder == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_createOrder_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_createOrder_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
 		return e.complexity.Mutation.CreateOrder(childComplexity, args["order"].(OrderInput)), true
-
 	case "Mutation.createProduct":
 		if e.complexity.Mutation.CreateProduct == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_createProduct_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_createProduct_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
 		return e.complexity.Mutation.CreateProduct(childComplexity, args["product"].(CreateProductInput)), true
-
 	case "Mutation.deleteProduct":
 		if e.complexity.Mutation.DeleteProduct == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_deleteProduct_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_deleteProduct_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
 		return e.complexity.Mutation.DeleteProduct(childComplexity, args["id"].(string)), true
-
 	case "Mutation.login":
 		if e.complexity.Mutation.Login == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_login_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_login_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
 		return e.complexity.Mutation.Login(childComplexity, args["account"].(LoginInput)), true
-
 	case "Mutation.register":
 		if e.complexity.Mutation.Register == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_register_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_register_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
 		return e.complexity.Mutation.Register(childComplexity, args["account"].(RegisterInput)), true
-
 	case "Mutation.updateProduct":
 		if e.complexity.Mutation.UpdateProduct == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_updateProduct_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_updateProduct_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -279,21 +269,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Order.CreatedAt(childComplexity), true
-
 	case "Order.id":
 		if e.complexity.Order.ID == nil {
 			break
 		}
 
 		return e.complexity.Order.ID(childComplexity), true
-
 	case "Order.products":
 		if e.complexity.Order.Products == nil {
 			break
 		}
 
 		return e.complexity.Order.Products(childComplexity), true
-
 	case "Order.totalPrice":
 		if e.complexity.Order.TotalPrice == nil {
 			break
@@ -307,28 +294,24 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.OrderedProduct.Description(childComplexity), true
-
 	case "OrderedProduct.id":
 		if e.complexity.OrderedProduct.ID == nil {
 			break
 		}
 
 		return e.complexity.OrderedProduct.ID(childComplexity), true
-
 	case "OrderedProduct.name":
 		if e.complexity.OrderedProduct.Name == nil {
 			break
 		}
 
 		return e.complexity.OrderedProduct.Name(childComplexity), true
-
 	case "OrderedProduct.price":
 		if e.complexity.OrderedProduct.Price == nil {
 			break
 		}
 
 		return e.complexity.OrderedProduct.Price(childComplexity), true
-
 	case "OrderedProduct.quantity":
 		if e.complexity.OrderedProduct.Quantity == nil {
 			break
@@ -342,28 +325,24 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Product.AccountID(childComplexity), true
-
 	case "Product.description":
 		if e.complexity.Product.Description == nil {
 			break
 		}
 
 		return e.complexity.Product.Description(childComplexity), true
-
 	case "Product.id":
 		if e.complexity.Product.ID == nil {
 			break
 		}
 
 		return e.complexity.Product.ID(childComplexity), true
-
 	case "Product.name":
 		if e.complexity.Product.Name == nil {
 			break
 		}
 
 		return e.complexity.Product.Name(childComplexity), true
-
 	case "Product.price":
 		if e.complexity.Product.Price == nil {
 			break
@@ -376,19 +355,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_accounts_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_accounts_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
 		return e.complexity.Query.Accounts(childComplexity, args["pagination"].(*PaginationInput), args["id"].(*int)), true
-
 	case "Query.product":
 		if e.complexity.Query.Product == nil {
 			break
 		}
 
-		args, err := ec.field_Query_product_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_product_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}

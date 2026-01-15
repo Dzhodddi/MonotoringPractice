@@ -3,14 +3,14 @@ package internal
 import (
 	"context"
 	"fmt"
+	order "github.com/Dzhodddi/EcommerceAPI/order/client"
 	"log"
 	"net"
 	"net/http"
 	"sync"
 
+	"github.com/Dzhodddi/EcommerceAPI/payment/proto/pb"
 	"github.com/IBM/sarama"
-	order "github.com/rasadov/EcommerceAPI/order/client"
-	"github.com/rasadov/EcommerceAPI/payment/proto/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )

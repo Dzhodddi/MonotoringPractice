@@ -3,11 +3,11 @@ package internal
 import (
 	"context"
 	"errors"
+	paymentModels "github.com/Dzhodddi/EcommerceAPI/payment/internal/models"
+	"github.com/dodopayments/dodopayments-go"
 	"net/http"
 
-	"github.com/dodopayments/dodopayments-go"
-	"github.com/rasadov/EcommerceAPI/payment/models"
-	"github.com/rasadov/EcommerceAPI/payment/proto/pb"
+	"github.com/Dzhodddi/EcommerceAPI/payment/proto/pb"
 	"gorm.io/gorm"
 )
 
@@ -19,10 +19,10 @@ type Service interface {
 	DeleteProduct(ctx context.Context, productId string) error
 
 	CreateCustomerPortalSession(ctx context.Context,
-		customer *models.Customer) (string, error)
+		customer *paymentModels.Customer) (string, error)
 	FindOrCreateCustomer(ctx context.Context,
 		userId uint64,
-		email, name string) (*models.Customer, error)
+		email, name string) (*paymentModels.Customer, error)
 
 	CreateCheckoutSession(ctx context.Context,
 		userId uint64,
@@ -31,7 +31,7 @@ type Service interface {
 		products []*pb.CartItem, orderId uint64,
 	) (checkoutURL string, err error)
 
-	HandlePaymentWebhook(ctx context.Context, w http.ResponseWriter, r *http.Request) (*models.Transaction, error)
+	HandlePaymentWebhook(ctx context.Context, w http.ResponseWriter, r *http.Request) (*paymentModels.Transaction, error)
 }
 
 type paymentService struct {
@@ -58,7 +58,7 @@ func (d *paymentService) RegisterProduct(ctx context.Context,
 		return err
 	}
 
-	return d.paymentRepository.SaveProduct(ctx, &models.Product{
+	return d.paymentRepository.SaveProduct(ctx, &paymentModels.Product{
 		ProductID:     productId,
 		DodoProductID: product.ProductID,
 		Price:         product.Price.FixedPrice,
@@ -130,7 +130,7 @@ func (d *paymentService) CreateCheckoutSession(ctx context.Context,
 	return d.client.CreateCheckoutSession(ctx, userId, customerId, redirect, dodoProducts, orderId)
 }
 
-func (d *paymentService) CreateCustomerPortalSession(ctx context.Context, customer *models.Customer) (string, error) {
+func (d *paymentService) CreateCustomerPortalSession(ctx context.Context, customer *paymentModels.Customer) (string, error) {
 	customerPortalLink, err := d.client.CreateCustomerSession(ctx, customer.CustomerId)
 	if err != nil {
 		return "", err
@@ -138,7 +138,7 @@ func (d *paymentService) CreateCustomerPortalSession(ctx context.Context, custom
 	return customerPortalLink, nil
 }
 
-func (d *paymentService) FindOrCreateCustomer(ctx context.Context, userId uint64, email, name string) (*models.Customer, error) {
+func (d *paymentService) FindOrCreateCustomer(ctx context.Context, userId uint64, email, name string) (*paymentModels.Customer, error) {
 	existingCustomer, err := d.paymentRepository.GetCustomerByUserID(ctx, userId)
 
 	if err == nil {
@@ -160,7 +160,7 @@ func (d *paymentService) FindOrCreateCustomer(ctx context.Context, userId uint64
 	return customer, err
 }
 
-func (d *paymentService) HandlePaymentWebhook(ctx context.Context, w http.ResponseWriter, r *http.Request) (*models.Transaction, error) {
+func (d *paymentService) HandlePaymentWebhook(ctx context.Context, w http.ResponseWriter, r *http.Request) (*paymentModels.Transaction, error) {
 	updatedTransaction, err := d.client.HandleWebhook(w, r)
 	if err != nil {
 		return nil, err

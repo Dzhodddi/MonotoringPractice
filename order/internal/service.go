@@ -2,17 +2,18 @@ package internal
 
 import (
 	"context"
+	orderModels "github.com/Dzhodddi/EcommerceAPI/order/internal/models"
+	"github.com/Dzhodddi/EcommerceAPI/pkg/kafka"
+	sharedProductModels "github.com/Dzhodddi/EcommerceAPI/pkg/shared/products"
 	"log"
 	"time"
 
 	"github.com/IBM/sarama"
-	"github.com/rasadov/EcommerceAPI/order/models"
-	"github.com/rasadov/EcommerceAPI/pkg/kafka"
 )
 
 type Service interface {
-	PostOrder(ctx context.Context, accountID uint64, totalPrice float64, products []*models.OrderedProduct) (*models.Order, error)
-	GetOrdersForAccount(ctx context.Context, accountID uint64) ([]*models.Order, error)
+	PostOrder(ctx context.Context, accountID uint64, totalPrice float64, products []*sharedProductModels.OrderedProduct) (*orderModels.Order, error)
+	GetOrdersForAccount(ctx context.Context, accountID uint64) ([]*orderModels.Order, error)
 	UpdateOrderPaymentStatus(ctx context.Context, orderId uint64, status string) error
 	GetProducer() sarama.AsyncProducer
 }
@@ -30,8 +31,8 @@ func (service orderService) GetProducer() sarama.AsyncProducer {
 	return service.producer
 }
 
-func (service orderService) PostOrder(ctx context.Context, accountID uint64, totalPrice float64, products []*models.OrderedProduct) (*models.Order, error) {
-	order := models.Order{
+func (service orderService) PostOrder(ctx context.Context, accountID uint64, totalPrice float64, products []*sharedProductModels.OrderedProduct) (*orderModels.Order, error) {
+	order := orderModels.Order{
 		AccountID:  accountID,
 		TotalPrice: totalPrice,
 		Products:   products,
@@ -49,9 +50,9 @@ func (service orderService) PostOrder(ctx context.Context, accountID uint64, tot
 			return
 		}
 		for _, product := range products {
-			err = kafka.SendMessageToRecommender(service, models.Event{
+			err = kafka.SendMessageToRecommender(service, orderModels.Event{
 				Type: "purchase",
-				EventData: models.EventData{
+				EventData: orderModels.EventData{
 					AccountId: int(accountID),
 					ProductId: product.ID,
 				},
@@ -65,7 +66,7 @@ func (service orderService) PostOrder(ctx context.Context, accountID uint64, tot
 	return &order, nil
 }
 
-func (service orderService) GetOrdersForAccount(ctx context.Context, accountID uint64) ([]*models.Order, error) {
+func (service orderService) GetOrdersForAccount(ctx context.Context, accountID uint64) ([]*orderModels.Order, error) {
 	return service.repository.GetOrdersForAccount(ctx, accountID)
 }
 

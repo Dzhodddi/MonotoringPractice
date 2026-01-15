@@ -25,7 +25,6 @@ func SendMessageToRecommender(service ProducerService, event any, topic string) 
 		Value: sarama.StringEncoder(jsonMessage),
 	}
 
-	// Send the message asynchronously
 	service.GetProducer().Input() <- msg
 
 	return nil

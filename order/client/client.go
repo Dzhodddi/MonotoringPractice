@@ -2,11 +2,12 @@ package client
 
 import (
 	"context"
+	"github.com/Dzhodddi/EcommerceAPI/order/internal/models"
+	productModels "github.com/Dzhodddi/EcommerceAPI/pkg/shared/products"
 	"log"
 	"time"
 
-	"github.com/rasadov/EcommerceAPI/order/models"
-	"github.com/rasadov/EcommerceAPI/order/proto/pb"
+	"github.com/Dzhodddi/EcommerceAPI/order/proto/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -36,7 +37,7 @@ func (client *Client) Close() {
 func (client *Client) PostOrder(
 	ctx context.Context,
 	accountID uint64,
-	products []*models.OrderedProduct,
+	products []*productModels.OrderedProduct,
 ) (*models.Order, error) {
 	var protoProducts []*pb.OrderProduct
 	for _, p := range products {
@@ -95,9 +96,9 @@ func (client *Client) GetOrdersForAccount(ctx context.Context, accountID uint64)
 			return nil, err
 		}
 
-		var products []*models.OrderedProduct
+		var products []*productModels.OrderedProduct
 		for _, p := range orderProto.Products {
-			products = append(products, &models.OrderedProduct{
+			products = append(products, &productModels.OrderedProduct{
 				ID:          p.Id,
 				Quantity:    p.Quantity,
 				Name:        p.Name,

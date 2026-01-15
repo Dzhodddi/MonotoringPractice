@@ -3,13 +3,11 @@ package tests
 import (
 	"context"
 	"fmt"
+	"github.com/Dzhodddi/EcommerceAPI/account/internal/accounts"
 	"log"
 	"testing"
 	"time"
 
-	"github.com/rasadov/EcommerceAPI/account/internal"
-
-	"github.com/rasadov/EcommerceAPI/account/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
@@ -22,16 +20,16 @@ func setupBenchmarkDB(b *testing.B) *gorm.DB {
 	require.NoError(b, err)
 
 	// Auto-migrate the Account model
-	err = db.AutoMigrate(&models.Account{})
+	err = db.AutoMigrate(&accounts.Account{})
 	require.NoError(b, err)
 
 	return db
 }
 
 // Add a new helper function for benchmark repository
-func setupBenchmarkRepository(b *testing.B) internal.Repository {
+func setupBenchmarkRepository(b *testing.B) accounts.Repository {
 	db := setupBenchmarkDB(b)
-	r, err := internal.NewPostgresRepository(db)
+	r, err := accounts.NewPostgresRepository(db)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -44,16 +42,16 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	require.NoError(t, err)
 
 	// Auto-migrate the Account model
-	err = db.AutoMigrate(&models.Account{})
+	err = db.AutoMigrate(&accounts.Account{})
 	require.NoError(t, err)
 
 	return db
 }
 
 // Test helper to create a repository with test database
-func setupTestRepository(t *testing.T) internal.Repository {
+func setupTestRepository(t *testing.T) accounts.Repository {
 	db := setupTestDB(t)
-	r, err := internal.NewPostgresRepository(db)
+	r, err := accounts.NewPostgresRepository(db)
 	if err != nil {
 		log.Println(err)
 	}
@@ -61,8 +59,8 @@ func setupTestRepository(t *testing.T) internal.Repository {
 }
 
 // Test helper to create a sample account
-func createSampleAccount() models.Account {
-	return models.Account{
+func createSampleAccount() accounts.Account {
+	return accounts.Account{
 		ID:       uint64(time.Now().UnixNano()),
 		Email:    "test@example.com",
 		Name:     "Test User",
@@ -202,7 +200,7 @@ func TestRepository_ListAccounts(t *testing.T) {
 	ctx := context.Background()
 
 	// Setup: Create multiple accounts
-	accounts := []models.Account{
+	accounts := []accounts.Account{
 		{
 			ID:    101,
 			Email: "user1@example.com",
@@ -295,7 +293,7 @@ func BenchmarkPostgresRepository_PutAccount(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		account := models.Account{
+		account := accounts.Account{
 			ID:    uint64(i),
 			Email: fmt.Sprintf("bench%d@example.com", i),
 			Name:  fmt.Sprintf("Bench User %d", i),
@@ -316,7 +314,7 @@ func BenchmarkPostgresRepository_GetAccountByEmail(b *testing.B) {
 
 	// Setup: Create test accounts
 	for i := 0; i < 100; i++ {
-		account := models.Account{
+		account := accounts.Account{
 			ID:    uint64(i),
 			Email: fmt.Sprintf("bench%d@example.com", i),
 			Name:  fmt.Sprintf("Bench User %d", i),

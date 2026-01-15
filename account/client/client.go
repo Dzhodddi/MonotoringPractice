@@ -2,10 +2,10 @@ package client
 
 import (
 	"context"
+	"github.com/Dzhodddi/EcommerceAPI/account/internal/accounts"
 	"log"
 
-	"github.com/rasadov/EcommerceAPI/account/models"
-	"github.com/rasadov/EcommerceAPI/account/proto/pb"
+	"github.com/Dzhodddi/EcommerceAPI/account/proto/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -55,7 +55,7 @@ func (client *Client) Login(ctx context.Context, email, password string) (string
 	return response.Value, nil
 }
 
-func (client *Client) GetAccount(ctx context.Context, Id uint64) (*models.Account, error) {
+func (client *Client) GetAccount(ctx context.Context, Id uint64) (*accounts.Account, error) {
 	r, err := client.service.GetAccount(
 		ctx,
 		&wrapperspb.UInt64Value{
@@ -65,14 +65,14 @@ func (client *Client) GetAccount(ctx context.Context, Id uint64) (*models.Accoun
 	if err != nil {
 		return nil, err
 	}
-	return &models.Account{
+	return &accounts.Account{
 		ID:    r.Account.GetId(),
 		Name:  r.Account.GetName(),
 		Email: r.Account.GetEmail(),
 	}, nil
 }
 
-func (client *Client) GetAccounts(ctx context.Context, skip, take uint64) ([]models.Account, error) {
+func (client *Client) GetAccounts(ctx context.Context, skip, take uint64) ([]accounts.Account, error) {
 	r, err := client.service.GetAccounts(
 		ctx,
 		&pb.GetAccountsRequest{Take: take, Skip: skip},
@@ -80,13 +80,13 @@ func (client *Client) GetAccounts(ctx context.Context, skip, take uint64) ([]mod
 	if err != nil {
 		return nil, err
 	}
-	var accounts []models.Account
+	var accountList []accounts.Account
 	for _, a := range r.Accounts {
-		accounts = append(accounts, models.Account{
+		accountList = append(accountList, accounts.Account{
 			ID:    a.GetId(),
 			Name:  a.GetName(),
 			Email: a.GetEmail(),
 		})
 	}
-	return accounts, nil
+	return accountList, nil
 }

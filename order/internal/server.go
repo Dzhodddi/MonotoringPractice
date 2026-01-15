@@ -3,14 +3,14 @@ package internal
 import (
 	"context"
 	"fmt"
+	accounts "github.com/Dzhodddi/EcommerceAPI/account/client"
+	models "github.com/Dzhodddi/EcommerceAPI/pkg/shared/products"
+	product "github.com/Dzhodddi/EcommerceAPI/product/client"
 	"log"
 	"net"
 
+	"github.com/Dzhodddi/EcommerceAPI/order/proto/pb"
 	mapset "github.com/deckarep/golang-set/v2"
-	account "github.com/rasadov/EcommerceAPI/account/client"
-	"github.com/rasadov/EcommerceAPI/order/models"
-	"github.com/rasadov/EcommerceAPI/order/proto/pb"
-	product "github.com/rasadov/EcommerceAPI/product/client"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -20,12 +20,12 @@ import (
 type grpcServer struct {
 	pb.UnimplementedOrderServiceServer
 	service       Service
-	accountClient *account.Client
+	accountClient *accounts.Client
 	productClient *product.Client
 }
 
 func ListenGRPC(service Service, accountURL string, productURL string, port int) error {
-	accountClient, err := account.NewClient(accountURL)
+	accountClient, err := accounts.NewClient(accountURL)
 	if err != nil {
 		return err
 	}

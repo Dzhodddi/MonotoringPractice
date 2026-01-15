@@ -196,3 +196,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Binaries directories
+/**/tmp
+/**/bin

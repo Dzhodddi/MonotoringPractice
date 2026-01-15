@@ -8,15 +8,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Dzhodddi/EcommerceAPI/payment/internal/config"
+	"github.com/Dzhodddi/EcommerceAPI/payment/internal/dto"
+	models2 "github.com/Dzhodddi/EcommerceAPI/payment/internal/models"
+	"github.com/dodopayments/dodopayments-go"
 	"io"
 	"log"
 	"net/http"
 
-	"github.com/dodopayments/dodopayments-go"
 	"github.com/dodopayments/dodopayments-go/option"
-	"github.com/rasadov/EcommerceAPI/payment/config"
-	"github.com/rasadov/EcommerceAPI/payment/dto"
-	"github.com/rasadov/EcommerceAPI/payment/models"
 )
 
 type PaymentClient interface {
@@ -30,7 +30,7 @@ type PaymentClient interface {
 		name string, price int64) error
 	ArchiveProduct(ctx context.Context, productId string) error
 
-	CreateCustomer(ctx context.Context, userId uint64, email, name string) (*models.Customer, error)
+	CreateCustomer(ctx context.Context, userId uint64, email, name string) (*models2.Customer, error)
 	CreateCustomerSession(ctx context.Context, customerId string) (string, error)
 
 	CreateCheckoutSession(ctx context.Context,
@@ -38,7 +38,7 @@ type PaymentClient interface {
 		customerId string, redirect string,
 		dodoProducts []dodopayments.CheckoutSessionRequestProductCartParam, orderId uint64) (checkoutURL string, err error)
 
-	HandleWebhook(w http.ResponseWriter, r *http.Request) (*models.Transaction, error)
+	HandleWebhook(w http.ResponseWriter, r *http.Request) (*models2.Transaction, error)
 }
 
 func NewDodoClient(apiKey string, testMode bool) PaymentClient {
@@ -85,7 +85,7 @@ func (d *dodoClient) CreateProduct(ctx context.Context,
 	return product, nil
 }
 
-func (d *dodoClient) CreateCustomer(ctx context.Context, userId uint64, email, name string) (*models.Customer, error) {
+func (d *dodoClient) CreateCustomer(ctx context.Context, userId uint64, email, name string) (*models2.Customer, error) {
 	customer, err := d.client.Customers.New(ctx, dodopayments.CustomerNewParams{
 		Email: dodopayments.F(email),
 		Name:  dodopayments.F(name),
@@ -95,7 +95,7 @@ func (d *dodoClient) CreateCustomer(ctx context.Context, userId uint64, email, n
 		return nil, err
 	}
 
-	return &models.Customer{
+	return &models2.Customer{
 		UserId:       userId,
 		BillingEmail: email,
 		BillingName:  name,
@@ -169,7 +169,7 @@ func (d *dodoClient) verifyWebhookSignature(signature string, payload []byte) bo
 	return hmac.Equal([]byte(signature), []byte(expectedSignature))
 }
 
-func (d *dodoClient) HandleWebhook(w http.ResponseWriter, r *http.Request) (*models.Transaction, error) {
+func (d *dodoClient) HandleWebhook(w http.ResponseWriter, r *http.Request) (*models2.Transaction, error) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return nil, errors.New("method not allowed")
@@ -196,7 +196,7 @@ func (d *dodoClient) HandleWebhook(w http.ResponseWriter, r *http.Request) (*mod
 		return nil, err
 	}
 
-	transaction := &models.Transaction{
+	transaction := &models2.Transaction{
 		OrderId:      payload.Data.Metadata.OrderId,
 		UserId:       payload.Data.Metadata.UserId,
 		CustomerId:   payload.Data.Customer.CustomerID,
@@ -210,9 +210,9 @@ func (d *dodoClient) HandleWebhook(w http.ResponseWriter, r *http.Request) (*mod
 	// Process the webhook based on event type
 	switch payload.Type {
 	case "payment.succeeded":
-		transaction.Status = string(models.Success)
+		transaction.Status = string(models2.Success)
 	case "payment.failed":
-		transaction.Status = string(models.Failed)
+		transaction.Status = string(models2.Failed)
 	default:
 		log.Printf("Unhandled webhook event type: %s", payload.Type)
 	}

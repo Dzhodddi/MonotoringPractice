@@ -3,40 +3,38 @@ package tests
 import (
 	"context"
 	"errors"
+	"github.com/Dzhodddi/EcommerceAPI/account/internal/accounts"
 	"log"
 	"testing"
 
-	"github.com/rasadov/EcommerceAPI/account/internal"
-	"github.com/rasadov/EcommerceAPI/account/models"
-	"github.com/rasadov/EcommerceAPI/pkg/auth"
-	"github.com/rasadov/EcommerceAPI/pkg/crypt"
+	"github.com/Dzhodddi/EcommerceAPI/pkg/auth"
+	"github.com/Dzhodddi/EcommerceAPI/pkg/crypt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-// MockRepository implements the Repository interface for testing
 type MockRepository struct {
 	mock.Mock
 }
 
-func (m *MockRepository) GetAccountByEmail(ctx context.Context, email string) (*models.Account, error) {
+func (m *MockRepository) GetAccountByEmail(ctx context.Context, email string) (*accounts.Account, error) {
 	args := m.Called(ctx, email)
-	return args.Get(0).(*models.Account), args.Error(1)
+	return args.Get(0).(*accounts.Account), args.Error(1)
 }
 
-func (m *MockRepository) PutAccount(ctx context.Context, account models.Account) (*models.Account, error) {
+func (m *MockRepository) PutAccount(ctx context.Context, account accounts.Account) (*accounts.Account, error) {
 	args := m.Called(ctx, account)
-	return args.Get(0).(*models.Account), args.Error(1)
+	return args.Get(0).(*accounts.Account), args.Error(1)
 }
 
-func (m *MockRepository) GetAccountByID(ctx context.Context, id uint64) (*models.Account, error) {
+func (m *MockRepository) GetAccountByID(ctx context.Context, id uint64) (*accounts.Account, error) {
 	args := m.Called(ctx, id)
-	return args.Get(0).(*models.Account), args.Error(1)
+	return args.Get(0).(*accounts.Account), args.Error(1)
 }
 
-func (m *MockRepository) ListAccounts(ctx context.Context, skip, take uint64) ([]*models.Account, error) {
+func (m *MockRepository) ListAccounts(ctx context.Context, skip, take uint64) ([]*accounts.Account, error) {
 	args := m.Called(ctx, skip, take)
-	return args.Get(0).([]*models.Account), args.Error(1)
+	return args.Get(0).([]*accounts.Account), args.Error(1)
 }
 
 func (m *MockRepository) Close() {
@@ -46,7 +44,7 @@ func (m *MockRepository) Close() {
 func TestAccountService_Register(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(MockRepository)
-	service := internal.NewService(mockRepo)
+	service := accounts.NewService(mockRepo)
 
 	t.Run("Successful registration", func(t *testing.T) {
 		// Setup
@@ -54,9 +52,9 @@ func TestAccountService_Register(t *testing.T) {
 		name := "Test User"
 		password := "password123"
 		hashedPassword, _ := crypt.HashPassword(password)
-		account := &models.Account{ID: 1, Name: name, Email: email, Password: hashedPassword}
+		account := &accounts.Account{ID: 1, Name: name, Email: email, Password: hashedPassword}
 
-		mockRepo.On("GetAccountByEmail", ctx, email).Return((*models.Account)(nil), errors.New("not found")).Once()
+		mockRepo.On("GetAccountByEmail", ctx, email).Return((*accounts.Account)(nil), errors.New("not found")).Once()
 		mockRepo.On("PutAccount", ctx, mock.AnythingOfType("models.Account")).Return(account, nil).Once()
 		token, err := auth.GenerateToken(account.ID)
 		if err != nil {
@@ -75,7 +73,7 @@ func TestAccountService_Register(t *testing.T) {
 	t.Run("Account already exists", func(t *testing.T) {
 		// Setup
 		email := "existing@example.com"
-		account := &models.Account{ID: 1, Email: email}
+		account := &accounts.Account{ID: 1, Email: email}
 
 		mockRepo.On("GetAccountByEmail", ctx, email).Return(account, nil).Once()
 
@@ -92,14 +90,14 @@ func TestAccountService_Register(t *testing.T) {
 func TestAccountService_Login(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(MockRepository)
-	service := internal.NewService(mockRepo)
+	service := accounts.NewService(mockRepo)
 
 	t.Run("Successful login", func(t *testing.T) {
 		// Setup
 		email := "test@example.com"
 		password := "password123"
 		hashedPassword, _ := crypt.HashPassword(password)
-		account := &models.Account{ID: 1, Email: email, Password: hashedPassword}
+		account := &accounts.Account{ID: 1, Email: email, Password: hashedPassword}
 		token, err := auth.GenerateToken(account.ID)
 		if err != nil {
 			log.Fatal(err)
@@ -121,7 +119,7 @@ func TestAccountService_Login(t *testing.T) {
 		email := "test@example.com"
 		password := "wrongpassword"
 		hashedPassword, _ := crypt.HashPassword("correctpassword")
-		account := &models.Account{ID: 1, Email: email, Password: hashedPassword}
+		account := &accounts.Account{ID: 1, Email: email, Password: hashedPassword}
 
 		mockRepo.On("GetAccountByEmail", ctx, email).Return(account, nil).Once()
 
@@ -137,12 +135,12 @@ func TestAccountService_Login(t *testing.T) {
 func TestAccountService_GetAccount(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(MockRepository)
-	service := internal.NewService(mockRepo)
+	service := accounts.NewService(mockRepo)
 
 	t.Run("Successful get account", func(t *testing.T) {
 		// Setup
 		id := uint64(1)
-		account := &models.Account{ID: id, Email: "test@example.com"}
+		account := &accounts.Account{ID: id, Email: "test@example.com"}
 
 		mockRepo.On("GetAccountByID", ctx, id).Return(account, nil).Once()
 
@@ -158,7 +156,7 @@ func TestAccountService_GetAccount(t *testing.T) {
 	t.Run("Account not found", func(t *testing.T) {
 		// Setup
 		id := uint64(1)
-		mockRepo.On("GetAccountByID", ctx, id).Return((*models.Account)(nil), errors.New("not found")).Once()
+		mockRepo.On("GetAccountByID", ctx, id).Return((*accounts.Account)(nil), errors.New("not found")).Once()
 
 		// Execute
 		_, err := service.GetAccount(ctx, id)
@@ -172,12 +170,12 @@ func TestAccountService_GetAccount(t *testing.T) {
 func TestAccountService_GetAccounts(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(MockRepository)
-	service := internal.NewService(mockRepo)
+	service := accounts.NewService(mockRepo)
 
 	t.Run("Successful get accounts with valid parameters", func(t *testing.T) {
 		// Setup
 		skip, take := uint64(0), uint64(50)
-		accounts := []*models.Account{{ID: 1}, {ID: 2}}
+		accounts := []*accounts.Account{{ID: 1}, {ID: 2}}
 
 		mockRepo.On("ListAccounts", ctx, skip, take).Return(accounts, nil).Once()
 
@@ -193,7 +191,7 @@ func TestAccountService_GetAccounts(t *testing.T) {
 	t.Run("Take exceeds limit", func(t *testing.T) {
 		// Setup
 		skip, take := uint64(0), uint64(150)
-		accounts := []*models.Account{{ID: 1}, {ID: 2}}
+		accounts := []*accounts.Account{{ID: 1}, {ID: 2}}
 
 		mockRepo.On("ListAccounts", ctx, skip, uint64(100)).Return(accounts, nil).Once()
 
@@ -209,7 +207,7 @@ func TestAccountService_GetAccounts(t *testing.T) {
 	t.Run("Skip and take are zero", func(t *testing.T) {
 		// Setup
 		skip, take := uint64(0), uint64(0)
-		accounts := []*models.Account{{ID: 1}, {ID: 2}}
+		accounts := []*accounts.Account{{ID: 1}, {ID: 2}}
 
 		mockRepo.On("ListAccounts", ctx, skip, uint64(100)).Return(accounts, nil).Once()
 

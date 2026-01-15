@@ -1,3 +1,4 @@
+# !!NOTE CLONED REPO, [original](#https://github.com/rasadov/EcommerceAPI)
 # ECOMMERCE MICROSERVICES
 
 This repository hosts a sample **e-commerce platform** demonstrating a **microservices architecture** using multiple **Go services** alongside a **Python-based Recommender service**. The project showcases:
@@ -30,7 +31,6 @@ The system comprises several microservices:
 - **Product** (Go): CRUD for products; indexes product data in **Elasticsearch**.
 - **Order** (Go): Handles order creation and persistence; publishes events to Kafka.
 - **Payment** (Go): Handles payment operations and sends updates to order microservice
-- **Recommender** (Python): Consumes Kafka events and builds product recommendations.
 - **API Gateway** (Go): A GraphQL service exposing a unified API for front-end clients.
 
 The entire ecosystem is containerized using **Docker Compose**. Datastores include **PostgreSQL**, **Elasticsearch**, and **Kafka**.
@@ -97,7 +97,7 @@ Before running the project, ensure you have the following installed:
 ### 📥 Clone the Repository
 
 ```bash
-  git clone https://github.com/rasadov/EcommerceAPI.git
+  git clone https://github.com/Dzhodddi/EcommerceAPI.git
   cd ecommercemicroservices
 ```
 

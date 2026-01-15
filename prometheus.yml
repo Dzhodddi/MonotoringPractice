@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'account'
+    static_configs:
+      - targets: ['account:9090']
+
+  - job_name: 'graphql'
+    static_configs:
+      - targets: ['graphql:8080']

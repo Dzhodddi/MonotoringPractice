@@ -11,7 +11,6 @@ type ConsumerService interface {
 	GetConsumer() sarama.Consumer
 }
 
-// StartEventsConsumer starts a simple Kafka consumer that listens to the given topic
 func StartEventsConsumer(ctx context.Context, service ConsumerService, topic string, OnEvent func(p int32, pc sarama.PartitionConsumer)) error {
 	partitions, err := service.GetConsumer().Partitions(topic)
 	if err != nil {

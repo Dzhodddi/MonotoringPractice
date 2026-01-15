@@ -3,15 +3,14 @@ package graph
 import (
 	"context"
 	"errors"
+	"github.com/Dzhodddi/EcommerceAPI/gateway/generated"
+	"github.com/Dzhodddi/EcommerceAPI/pkg/middleware"
+	sharedProductModels "github.com/Dzhodddi/EcommerceAPI/pkg/shared/products"
 	"log"
 	"time"
 
-	"github.com/gin-gonic/gin"
-
-	"github.com/rasadov/EcommerceAPI/graphql/generated"
-	"github.com/rasadov/EcommerceAPI/order/models"
-	payment "github.com/rasadov/EcommerceAPI/payment/proto/pb"
-	"github.com/rasadov/EcommerceAPI/pkg/auth"
+	payment "github.com/Dzhodddi/EcommerceAPI/payment/proto/pb"
+	"github.com/Dzhodddi/EcommerceAPI/pkg/auth"
 )
 
 var (
@@ -28,12 +27,11 @@ func (resolver *mutationResolver) Register(ctx context.Context, in generated.Reg
 
 	token, err := resolver.server.accountClient.Register(ctx, in.Name, in.Email, in.Password)
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 
-	ginContext, ok := ctx.Value("GinContextKey").(*gin.Context)
-	if !ok {
+	ginContext, err := middleware.GinContextFromContext(ctx)
+	if err != nil {
 		return nil, errors.New("could not retrieve gin context")
 	}
 	ginContext.SetCookie("token", token, 3600, "/", "localhost", false, true)
@@ -47,12 +45,11 @@ func (resolver *mutationResolver) Login(ctx context.Context, in generated.LoginI
 
 	token, err := resolver.server.accountClient.Login(ctx, in.Email, in.Password)
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 
-	ginContext, ok := ctx.Value("GinContextKey").(*gin.Context)
-	if !ok {
+	ginContext, err := middleware.GinContextFromContext(ctx)
+	if err != nil {
 		return nil, errors.New("could not retrieve gin context")
 	}
 	ginContext.SetCookie("token", token, 3600, "/", "localhost", false, true)
@@ -63,23 +60,15 @@ func (resolver *mutationResolver) Login(ctx context.Context, in generated.LoginI
 func (resolver *mutationResolver) CreateProduct(ctx context.Context, in generated.CreateProductInput) (*generated.Product, error) {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
-
-	log.Println("CreateProduct called with input:", in)
-
-	accountId, err := auth.GetUserIdInt(ctx, true)
+	accountId, err := auth.GetUserIdInt(ctx)
 	if err != nil {
 		return nil, err
 	}
-	log.Println("CreateProduct called with accountId:", accountId)
 	postProduct, err := resolver.server.productClient.PostProduct(ctx, in.Name, in.Description, in.Price, int64(accountId))
 	if err != nil {
-		log.Println(err)
+		log.Printf("could not create product: %v", err)
 		return nil, err
 	}
-
-	log.Println("Created product:", postProduct)
-	log.Println("Product id: ", postProduct.ID)
-
 	return &generated.Product{
 		ID:          postProduct.ID,
 		Name:        postProduct.Name,
@@ -93,7 +82,7 @@ func (resolver *mutationResolver) UpdateProduct(ctx context.Context, in generate
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	accountId, err := auth.GetUserIdInt(ctx, true)
+	accountId, err := auth.GetUserIdInt(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -115,14 +104,13 @@ func (resolver *mutationResolver) DeleteProduct(ctx context.Context, id string) 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	accountId, err := auth.GetUserIdInt(ctx, true)
+	accountId, err := auth.GetUserIdInt(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	err = resolver.server.productClient.DeleteProduct(ctx, id, int64(accountId))
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 
@@ -134,25 +122,24 @@ func (resolver *mutationResolver) CreateOrder(ctx context.Context, in generated.
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	var products []*models.OrderedProduct
+	var products []*sharedProductModels.OrderedProduct
 	for _, product := range in.Products {
 		if product.Quantity <= 0 {
 			return nil, ErrInvalidParameter
 		}
-		products = append(products, &models.OrderedProduct{
+		products = append(products, &sharedProductModels.OrderedProduct{
 			ID:       product.ID,
 			Quantity: uint32(product.Quantity),
 		})
 	}
 
-	accountId, err := auth.GetUserIdInt(ctx, true)
+	accountId, err := auth.GetUserIdInt(ctx)
 	if err != nil {
 		return nil, errors.New("unauthorized")
 	}
 
 	postOrder, err := resolver.server.orderClient.PostOrder(ctx, uint64(accountId), products)
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 
@@ -181,7 +168,6 @@ func (resolver *mutationResolver) CreateCustomerPortalSession(ctx context.Contex
 
 	UrlWithSession, err := resolver.server.paymentClient.CreateCustomerPortalSession(ctx, uint64(credentials.AccountID), credentials.Email, credentials.Name)
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 	return &generated.RedirectResponse{URL: UrlWithSession}, nil
@@ -203,7 +189,6 @@ func (resolver *mutationResolver) CreateCheckoutSession(ctx context.Context, det
 		details.AccountID, details.Email, details.Name, details.RedirectURL, products)
 
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 	return &generated.RedirectResponse{URL: UrlWithCheckoutSession}, nil

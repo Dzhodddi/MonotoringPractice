@@ -6,8 +6,9 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/rasadov/EcommerceAPI/account/config"
 )
+
+// TODO: Find a nice way to pass config here
 
 type JWTCustomClaims struct {
 	UserID uint64 `json:"user_id"`
@@ -18,14 +19,14 @@ func GenerateToken(userID uint64) (string, error) {
 	claims := &JWTCustomClaims{
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    config.Issuer,
+			Issuer:    "foo",
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(config.SecretKey))
+	return token.SignedString([]byte("config.SecretKey"))
 }
 
 func ValidateToken(encodedToken string) (*jwt.Token, error) {
@@ -36,7 +37,7 @@ func ValidateToken(encodedToken string) (*jwt.Token, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 			}
-			return []byte(config.SecretKey), nil
+			return []byte("config.SecretKey"), nil
 		},
 	)
 	if err != nil {
@@ -44,7 +45,7 @@ func ValidateToken(encodedToken string) (*jwt.Token, error) {
 	}
 
 	if claims, ok := token.Claims.(*JWTCustomClaims); ok && token.Valid {
-		if claims.Issuer != config.Issuer {
+		if claims.Issuer != "foo" {
 			return nil, errors.New("invalid Issuer in token")
 		}
 		return token, nil

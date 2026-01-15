@@ -2,16 +2,16 @@ package internal
 
 import (
 	"context"
+	orderModels "github.com/Dzhodddi/EcommerceAPI/order/internal/models"
 	"log"
 
-	"github.com/rasadov/EcommerceAPI/order/models"
 	"gorm.io/gorm"
 )
 
 type Repository interface {
 	Close()
-	PutOrder(ctx context.Context, order *models.Order) error
-	GetOrdersForAccount(ctx context.Context, accountId uint64) ([]*models.Order, error)
+	PutOrder(ctx context.Context, order *orderModels.Order) error
+	GetOrdersForAccount(ctx context.Context, accountId uint64) ([]*orderModels.Order, error)
 	UpdateOrderPaymentStatus(ctx context.Context, orderId uint64, status string) error
 }
 
@@ -30,7 +30,7 @@ func NewPostgresRepository(db *gorm.DB) (Repository, error) {
 		return nil, err
 	}
 
-	err = db.AutoMigrate(&models.Order{}, &models.ProductsInfo{})
+	err = db.AutoMigrate(&orderModels.Order{}, &orderModels.ProductsInfo{})
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (repository *postgresRepository) Close() {
 	}
 }
 
-func (repository *postgresRepository) PutOrder(ctx context.Context, order *models.Order) error {
+func (repository *postgresRepository) PutOrder(ctx context.Context, order *orderModels.Order) error {
 	tx := repository.db.WithContext(ctx).Begin()
 
 	err := tx.WithContext(ctx).Create(&order).Error
@@ -59,7 +59,7 @@ func (repository *postgresRepository) PutOrder(ctx context.Context, order *model
 	}
 
 	for _, product := range order.Products {
-		orderedProduct := models.ProductsInfo{
+		orderedProduct := orderModels.ProductsInfo{
 			OrderID:   order.ID,
 			ProductID: product.ID,
 			Quantity:  int(product.Quantity),
@@ -77,8 +77,8 @@ func (repository *postgresRepository) PutOrder(ctx context.Context, order *model
 	return nil
 }
 
-func (repository *postgresRepository) GetOrdersForAccount(ctx context.Context, accountId uint64) ([]*models.Order, error) {
-	var orders []*models.Order
+func (repository *postgresRepository) GetOrdersForAccount(ctx context.Context, accountId uint64) ([]*orderModels.Order, error) {
+	var orders []*orderModels.Order
 	err := repository.db.WithContext(ctx).
 		Table("orders o").
 		Select("o.id, o.created_at, o.account_id, o.total_price::money::numeric::float8, op.product_id, op.quantity").

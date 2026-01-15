@@ -1,6 +1,6 @@
 package utils
 
-import "github.com/rasadov/EcommerceAPI/graphql/generated"
+import "github.com/Dzhodddi/EcommerceAPI/gateway/generated"
 
 func Bounds(pagination *generated.PaginationInput) (uint64, uint64) {
 	skipValue := uint64(0)
